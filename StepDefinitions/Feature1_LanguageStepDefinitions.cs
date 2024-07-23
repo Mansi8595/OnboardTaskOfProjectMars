@@ -3,239 +3,428 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
 using System;
 using TechTalk.SpecFlow;
-using Mars_SpecFlowProject1.Utils;
 using NUnit.Framework;
-using SpecFlowProject_MarsProject.Utils;
-using OnboardTaskProjectMars.Pages;
+using OnboardTaskProjectMars.Utils;
+using ProjecrMarsOnboardingtask.Pages;
+using OpenQA.Selenium.Support.UI;
 
 namespace ProjecrMarsOnboardingtask.StepDefinitions
 {
     [Binding, Scope(Feature = "Feature1_Language")]
-    public class Feature1_LanguageStepDefinitions : HookBase
+    public class Feature1_LanguageStepDefinitions : CommonDriver
     {
-        private readonly LoginPage loginPageObj;
-        private readonly AddLanguageTab languageTabObj;
-        private readonly EditLanguage editLanguageObj;
-        private readonly DeleteLanguage deleteLanguageObj;
-        private readonly AddLanguagewithEmptyName addLanguagewithEmptyNameObj;
-        private readonly AddlanguagewithDuplicateEntry addLanguagewithDuplicateEntryObj;
-        private readonly AddMultipleLanguageRecord AddMultipleLanguageRecordObj;
-        private readonly EditLanguageWithEmptyName editLanguageWithEmptyNameObj;
-        private readonly EditLanguageWithDuplicateEntry editLanguageWithDuplicateEntryObj;
-        private readonly CleanLanguageData cleanLanguageDataObj;
-        public Feature1_LanguageStepDefinitions()
+        private readonly ScenarioContext _scenarioContext;
+        Language languageObj;
+        LoginPage LoginPageObj;
+        public Feature1_LanguageStepDefinitions(ScenarioContext scenarioContext) 
         {
-            loginPageObj = new LoginPage();
-            languageTabObj = new AddLanguageTab();
-            editLanguageObj = new EditLanguage();
-            deleteLanguageObj = new DeleteLanguage();
-            addLanguagewithEmptyNameObj = new AddLanguagewithEmptyName();
-            addLanguagewithDuplicateEntryObj = new AddlanguagewithDuplicateEntry();
-            AddMultipleLanguageRecordObj = new AddMultipleLanguageRecord();
-            editLanguageWithEmptyNameObj = new EditLanguageWithEmptyName();
-            editLanguageWithDuplicateEntryObj = new EditLanguageWithDuplicateEntry();
-            cleanLanguageDataObj = new CleanLanguageData();
+            _scenarioContext = scenarioContext;
+            languageObj = new Language();
+        }
+
+        [Given(@"User Logs into Mars")]
+        public void GivenUserLogsIntoMars()
+        {
+
+            LoginPageObj = new LoginPage();
+            LoginPageObj.login();
+        }
+
+        [Given(@"User navigate to language tab")]
+        public void GivenUserNavigateToLanguageTab()
+        {
+            languageObj.ClickAnyTab("Languages");
+        }
+
+        [When(@"User add a new Language record '([^']*)' '([^']*)'")]
+        public void WhenUserAddANewLanguageRecord(string language, string languageLevel)
+        {
+            languageObj.CreateLanguage(language, languageLevel);
+            if (_scenarioContext.ContainsKey("Languages"))
+            {
+                var languages = _scenarioContext["Languages"] as List<string>;
+
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+                else
+                {
+                    _scenarioContext["Languages"] = new List<string> { language };
+                }
+            }
+            else
+            {
+                _scenarioContext["Languages"] = new List<string> { language };
+            }
+        }
+
+
+        [Then(@"new record should be successfully created '([^']*)'")]
+        public void ThenNewRecordShouldBeSuccessfullyCreated(string language)
+        {
+
+            string message = languageObj.GetSuccessMessage();
+            string assertMessage = language + " has been added to your languages";
+            Assert.That(message == assertMessage, "Actual message and Expected message do not match");
+
+            //check language and language level are created successfully
+            string addedLanguage = languageObj.GetLanguage();
+            Assert.That(addedLanguage == language, "Actual language and Expected language do not match");
 
         }
-       
-        [Given(@"User Logs into Mars portal and navigates to language tab")]
-        public void GivenUserLogsIntoMarsPortalAndNavigatesToLanguageTab()
-        {
-            loginPageObj.login(driver);
-        }
-        // Clean data
+
         [When(@"User deletes All languages record")]
         public void WhenUserDeletesAllLanguagesRecord()
         {
-            cleanLanguageDataObj.Deletelanguage(driver);
+            languageObj.CleanLanguageData();
         }
 
         [Then(@"All Languages record should be successfully deleted")]
         public void ThenAllLanguagesRecordShouldBeSuccessfullyDeleted()
         {
-            cleanLanguageDataObj.AssertDeletelanguage(driver);
+            var rows = driver.FindElements(By.CssSelector("div[data-tab='first'] .ui.fixed.table tbody tr"));
+            Assert.That(rows.Count == 0, "All records have been successfully deleted.");
+
         }
 
-        //Add language
-        [Given(@"Clean the data before test")]
-        public void GivenCleanTheDataBeforeTest()
+        [When(@"User adds a new Language record '([^']*)' '([^']*)'")]
+        public void WhenUserAddsANewLanguageRecord(string language, string languageLevel)
         {
-            cleanLanguageDataObj.Deletelanguage(driver);
-        }
-
-        [When(@"User creates a new Language record '([^']*)'")]
-        public void WhenUserCreatesANewLanguageRecord(string language)
-        {
-            languageTabObj.CreateLanguage(driver, language);
-        }
-
-        [Then(@"new Language record should be successfully created '([^']*)'")]
-        public void ThenNewLanguageRecordShouldBeSuccessfullyCreated(string language)
-        {
-            languageTabObj.AssertCreateLanguage(driver, language);
-        }
-
-      
-        [When(@"User tries to create a new Language record with an empty name '([^']*)'")]
-        public void WhenUserTriesToCreateANewLanguageRecordWithAnEmptyName(string language)
-        {
-          addLanguagewithEmptyNameObj.CreateLanguagewithEmpty(driver, language);   
-        }
-
-        [Then(@"an error message ""([^""]*)"" should be displayed")]
-        public void ThenAnErrorMessageShouldBeDisplayed(string expectedMessage)
-        {
-            addLanguagewithEmptyNameObj.GetErrorMessage(driver);
-        }
-
-        [Given(@"Craete A new data '([^']*)'")]
-        public void GivenCraeteANewData(string language)
-        {
-            languageTabObj.CreateLanguage(driver, language);
-        }
-
-        [When(@"User tries to create a new Language record which is already created before in record '([^']*)'")]
-        public void WhenUserTriesToCreateANewLanguageRecordWhichIsAlreadyCreatedBeforeInRecord(string language)
-        {
-            addLanguagewithDuplicateEntryObj.CreateLanguagewithDuplicate(driver, language);
-        }
-
-        [Then(@"Duplicate entry error message ""([^""]*)"" should be displayed")]
-        public void ThenDuplicateEntryErrorMessageShouldBeDisplayed(string expectedMessage)
-        {
-            addLanguagewithDuplicateEntryObj.GetErrorMessage(driver);
-        }
-
-      
-        [When(@"User creates a new Language records")]
-        public void WhenUserCreatesANewLanguageRecords(Table table)
-        {                     
-            foreach (var row in table.Rows)
+            languageObj.CreateLanguage(language, languageLevel);
+            if (_scenarioContext.ContainsKey("Languages"))
             {
-                string languages = row["Language"];
-                AddMultipleLanguageRecordObj.CreateMultipleLanguage(driver, languages);
+                var languages = _scenarioContext["Languages"] as List<string>;
+
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+                else
+                {
+                    _scenarioContext["Languages"] = new List<string> { language };
+                }
             }
-        }
-
-        [Then(@"All Language record should be successfully created")]
-        public void ThenAllLanguageRecordShouldBeSuccessfullyCreated(Table table)
-        {
-            var expectedLanguages = table.Rows.Select(row => row["Language"]).ToArray();
-            AddMultipleLanguageRecordObj.AssertAllLanguages(driver, expectedLanguages);
-        }
-
-        [When(@"User edits language record '([^']*)'")]
-        public void WhenUserEditsLanguageRecord(string language)
-        {
-            editLanguageObj.Editlanguage(driver, language);
-        }
-
-        [Then(@"new Language record should be successfully updated '([^']*)'")]
-        public void ThenNewLanguageRecordShouldBeSuccessfullyUpdated(string language)
-        {
-            editLanguageObj.AssertEditlanguage(driver, language);
-        }
-
-        [When(@"User tries to edit a new Language record with an empty name '([^']*)'")]
-        public void WhenUserTriesToEditANewLanguageRecordWithAnEmptyName(string language)
-        {
-            editLanguageWithEmptyNameObj.EditlanguagewithEmptyName(driver, language);
+            else
+            {
+                _scenarioContext["Languages"] = new List<string> { language };
+            }
         }
 
         [Then(@"Error message ""([^""]*)"" should be displayed")]
-        public void ThenErrorMessageShouldBeDisplayed(string expectedMessage)
+        public void ThenErrorMessageShouldBeDisplayed(string message)
         {
-            editLanguageWithEmptyNameObj.GetErrorMessage(driver);
+            string actualErrorMessage = languageObj.GetErrorMessage();
+            string expectedErrorMessage = message;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
         }
 
-        [Given(@"Craetes a new Language record '([^']*)'")]
-        public void GivenCraetesANewLanguageRecord(string language)
+        [When(@"User tries to create a new Language record which is already created before in record '([^']*)' '([^']*)'")]
+        public void WhenUserTriesToCreateANewLanguageRecordWhichIsAlreadyCreatedBeforeInRecord(string language, string languageLevel)
         {
-            languageTabObj.CreateLanguage(driver, language);
+            languageObj.CreateLanguage(language, languageLevel);
+            if (_scenarioContext.ContainsKey("Languages"))
+            {
+                var languages = _scenarioContext["Languages"] as List<string>;
+
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+                else
+                {
+                    _scenarioContext["Languages"] = new List<string> { language };
+                }
+            }
+            else
+            {
+                _scenarioContext["Languages"] = new List<string> { language };
+            }
         }
 
-        [When(@"User tries to edit Language record which is already created before in record '([^']*)'")]
-        public void WhenUserTriesToEditLanguageRecordWhichIsAlreadyCreatedBeforeInRecord(string language)
+        [Then(@"Error message for duplicate entry ""([^""]*)"" should be displayed")]
+        public void ThenErrorMessageForDuplicateEntryShouldBeDisplayed(string errorMessage)
         {
-            editLanguageWithDuplicateEntryObj.EditlanguageWithDuplicate(driver, language);
+            string actualErrorMessage = languageObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
         }
 
-        [Then(@"Duplicate data error message ""([^""]*)"" should be displayed")]
-        public void ThenDuplicateDataErrorMessageShouldBeDisplayed(string expectedMessage)
+        [When(@"User add multiple Languages record")]
+        public void WhenUserAddMultipleLanguagesRecord(Table table)
         {
-            editLanguageWithDuplicateEntryObj.GetErrorMessage(driver);
-        }
+            List<string> languages = new List<string>();
 
-        [Given(@"User creates a new Language records")]
-        public void GivenUserCreatesANewLanguageRecords(Table table)
-        {
             foreach (var row in table.Rows)
             {
                 string language = row["Language"];
-                AddMultipleLanguageRecordObj.CreateMultipleLanguage(driver, language);
-                Thread.Sleep(5000);
+                string languageLevel = row["Level"];
+                languageObj.CreateLanguage(language, languageLevel);
+                languages.Add(language);
+            }
+
+            _scenarioContext["Languages"] = languages;
+        }
+
+        [Then(@"All Language record should be successfully created")]
+        public void ThenAllLanguageRecordShouldBeSuccessfullyCreated()
+        {
+
+            if (!_scenarioContext.ContainsKey("Languages"))
+            {
+                throw new InvalidOperationException("No languages were stored in scenario context.");
+            }
+
+            var expectedLanguages = (List<string>)_scenarioContext["Languages"];
+
+            // Ensure the list is not empty
+            if (expectedLanguages == null || !expectedLanguages.Any())
+            {
+                throw new InvalidOperationException("Expected languages list is empty.");
+            }
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(20));
+            var actualLanguages = new List<string>();
+
+            for (int i = 0; i < expectedLanguages.Count; i++)
+            {
+                // Wait for each language element to be visible
+                wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath($"/html/body/div[1]/div/section[2]/div/div/div/div[3]/form/div[2]/div/div[2]/div/table/tbody[{i + 1}]/tr/td[1]")));
+
+                // Get the actual language text
+                IWebElement languageElement = driver.FindElement(By.XPath($"/html/body/div[1]/div/section[2]/div/div/div/div[3]/form/div[2]/div/div[2]/div/table/tbody[{i + 1}]/tr/td[1]"));
+                actualLanguages.Add(languageElement.Text.Trim());
+            }
+
+            // Compare actual languages with expected languages
+            for (int i = 0; i < expectedLanguages.Count; i++)
+            {
+                string expectedLanguage = expectedLanguages[i];
+                string actualLanguage = actualLanguages[i];
+
+                if (!string.Equals(actualLanguage, expectedLanguage, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new AssertionException($"Expected language '{expectedLanguage}' at row {i + 1}, but found '{actualLanguage}'. Test failed!");
+                }
             }
         }
 
-        [When(@"User attempts to add a (.*)th language record")]
-        public void WhenUserAttemptsToAddAThLanguageRecord(int p0)
+
+        [Then(@"The following error messages should be displayed")]
+        public void ThenTheFollowingErrorMessagesShouldBeDisplayed(Table table)
         {
+            {
+                var expectedMessages = table.Rows.Select(row => row["Expected Message"]).ToList();
+                var actualMessages = new List<string>();
+
+                foreach (var expectedMessage in expectedMessages)
+                {
+                    string actualMessage = languageObj.GetErrorMessage();
+                    actualMessages.Add(actualMessage);
+
+                    if (actualMessage != expectedMessage)
+                    {
+                        Assert.Fail($"Validation error message mismatch: Expected '{expectedMessage}' but got '{actualMessage}'");
+                    }
+                }
+
+                Assert.That(actualMessages, Is.EquivalentTo(expectedMessages), "Actual messages do not match expected messages.");
+            }
+        }
+
+
+        [Then(@"User should not see Add button to add (.*)th language record")]
+        public void ThenUserShouldNotSeeAddButtonToAddThLanguageRecord(int p0)
+        {
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
             try
             {
-                bool isAddButtonPresent = driver.FindElements(By.XPath("//input[@value='Add']")).Count > 0;
-                Assert.IsFalse(isAddButtonPresent, "Add button should not be present or enabled after adding 4th record.");
+                // Wait until the element is either visible or the timeout is reached
+                var addButton = wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath("//div[@data-tab='first']//div[contains(@class, 'ui teal button')]")));
+
+                // If the button is found, fail the test
+                Assert.Fail("Add button for additional language records should not be visible.");
             }
-            catch (Exception ex)
+            catch (NoSuchElementException)
             {
-                Console.WriteLine("Exception occurred: " + ex.Message);
-                throw;
+                // If the button is not found, the test will pass
+                // Optionally, log a message or take a screenshot for debugging
+            }
+            catch (WebDriverTimeoutException)
+            {
+                // If the button is not found within the wait time, the test will pass
+                // Optionally, log a message or take a screenshot for debugging
             }
         }
 
-        [Then(@"User should not see Add button to add another language record")]
-        public void ThenUserShouldNotSeeAddButtonToAddAnotherLanguageRecord()
+
+        [When(@"User edits language record '([^']*)' '([^']*)'")]
+        public void WhenUserEditsLanguageRecordBasic(string language, string languageLevel)
         {
-            try
+            languageObj.UpdateLanguage(language, languageLevel);
+            if (_scenarioContext.ContainsKey("Languages"))
             {
-                bool isAddButtonPresent = driver.FindElements(By.XPath("//button[contains(text(), 'Add')]")).Count > 0;
-                Assert.IsFalse(isAddButtonPresent, "Add button should not be present after attempting to add 5th record.");
+                var languages = _scenarioContext["Languages"] as List<string>;
+
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+                else
+                {
+                    _scenarioContext["Languages"] = new List<string> { language };
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine("Exception occurred: " + ex.Message);
-                throw;
+                _scenarioContext["Languages"] = new List<string> { language };
             }
         }
 
-        [Given(@"Create a new Language record '([^']*)'")]
-        public void GivenCreateANewLanguageRecord(string language)
+        [Then(@"Language record should be successfully updated '([^']*)'")]
+        public void ThenLanguageRecordShouldBeSuccessfullyUpdated(string language)
         {
-            languageTabObj.CreateLanguage(driver, language);
+            string message = languageObj.GetSuccessMessage();
+            string assertMessage = language + " has been updated to your languages";
+            Assert.That(message == assertMessage, "Actual message and Expected message do not match");
+            //check language and language level are created successfully
+            string updatedLanguage = languageObj.GetLanguage();
+            Assert.That(updatedLanguage == language, "Actual language and Expected language do not match");
         }
+
+        [When(@"User add new Language record '([^']*)' '([^']*)'")]
+        public void WhenUserAddNewLanguageRecord(string language, string languageLevel)
+        {
+            languageObj.CreateLanguage(language, languageLevel);
+            if (_scenarioContext.ContainsKey("Languages"))
+            {
+                var languages = _scenarioContext["Languages"] as List<string>;
+
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+                else
+                {
+                    _scenarioContext["Languages"] = new List<string> { language };
+                }
+            }
+            else
+            {
+                _scenarioContext["Languages"] = new List<string> { language };
+            }
+        }
+
+
+        [When(@"User tries to edit a new Language record with '([^']*)' '([^']*)'")]
+        public void WhenUserTriesToEditANewLanguageRecordWith(string language, string languageLevel)
+        {
+            languageObj.UpdateLanguage(language, languageLevel);
+            if (_scenarioContext.ContainsKey("Languages"))
+            {
+                var languages = _scenarioContext["Languages"] as List<string>;
+
+                if (languages != null)
+                {
+                    languages.Add(language);
+                }
+                else
+                {
+                    _scenarioContext["Languages"] = new List<string> { language };
+                }
+            }
+            else
+            {
+                _scenarioContext["Languages"] = new List<string> { language };
+            }
+
+        }
+
+        [Then(@"""([^""]*)"" error should be displayed and '([^']*)' language is not updated")]
+        public void ThenErrorShouldBeDisplayedAndLanguageIsNotUpdated(string errorMessage, string language)
+        {
+            string actualErrorMessage = languageObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
+        }
+        [Then(@"""([^""]*)"" error should be displayed and '([^']*)' language is not update")]
+        public void ThenErrorShouldBeDisplayedAndLanguageIsNotUpdate(string errorMessage, string language)
+        {
+            string actualErrorMessage = languageObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
+
+        }
+
 
         [When(@"User deletes language record '([^']*)'")]
         public void WhenUserDeletesLanguageRecord(string language)
         {
-            deleteLanguageObj.Deletelanguage(driver, language);
-        }
+            _scenarioContext["Language"] = new
+            {
+                Language = language
+            };
+            languageObj.DeleteLanguage(language);
 
-        [Then(@"new Language record should be successfully deleted '([^']*)'")]
-        public void ThenNewLanguageRecordShouldBeSuccessfullyDeleted(string language)
-        {
-            deleteLanguageObj.AssertDeletelanguage(driver, language);
         }
-        
-        [When(@"User a deletes language record '([^']*)'")]
-        public void WhenUserADeletesLanguageRecord(string language)
+        [Then(@"new Language record should be successfully deleted")]
+        public void ThenNewLanguageRecordShouldBeSuccessfullyDeleted()
         {
-            deleteLanguageObj.Deletelanguage(driver, language);
-        }
+            if (!_scenarioContext.ContainsKey("Language"))
+            {
+                throw new InvalidOperationException("No deleted language record was found in scenario context.");
+            }
 
-       
-        [Then(@"Language record should not displyed in the list '([^']*)'")]
-        public void ThenLanguageRecordShouldNotDisplyedInTheList(string language)
+            var deletedLanguage = _scenarioContext["Language"].ToString();
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.CssSelector("div[data-tab='first'] .ui.fixed.table")));
+
+            var rows = driver.FindElements(By.CssSelector("div[data-tab='first'] .ui.fixed.table tbody tr"));
+
+            bool isLanguageDeleted = true;
+
+            foreach (var row in rows)
+            {
+                var cell = row.FindElement(By.CssSelector("td:first-child"));
+                if (cell.Text.Equals(deletedLanguage, StringComparison.OrdinalIgnoreCase))
+                {
+                    isLanguageDeleted = false;
+                    break;
+                }
+            }
+
+            Assert.That(isLanguageDeleted, $"Record '{deletedLanguage}' hasn't been deleted successfully. Test Failed");
+        }
+        [Then(@"new Language record should not deleted")]
+        public void ThenNewLanguageRecordShouldNotDeleted()
         {
-           deleteLanguageObj.AssertDeletelanguage(driver, language);
+            if (!_scenarioContext.ContainsKey("Language"))
+            {
+                throw new InvalidOperationException("No deleted language record was found in scenario context.");
+            }
+
+            var deletedLanguage = _scenarioContext["Language"].ToString();
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.CssSelector("div[data-tab='first'] .ui.fixed.table")));
+
+            var rows = driver.FindElements(By.CssSelector("div[data-tab='first'] .ui.fixed.table tbody tr"));
+
+            bool isLanguageDeleted = true;
+
+            foreach (var row in rows)
+            {
+                var cell = row.FindElement(By.CssSelector("td:first-child"));
+                if (cell.Text.Equals(deletedLanguage, StringComparison.OrdinalIgnoreCase))
+                {
+                    isLanguageDeleted = false;
+                    break;
+                }
+            }
+
+            Assert.That(isLanguageDeleted, $"Record '{deletedLanguage}' hasn't been deleted successfully. Test Failed");
         }
 
     }

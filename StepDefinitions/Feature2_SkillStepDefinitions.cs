@@ -1,198 +1,329 @@
 using Mars_SpecFlowProject1.Pages;
+using NUnit.Framework;
+using OnboardTaskProjectMars.Utils;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
 using ProjecrMarsOnboardingtask.Pages;
-using SpecFlowProject_MarsProject.Pages;
-using SpecFlowProject_MarsProject.Utils;
 using System;
 using TechTalk.SpecFlow;
 
 namespace ProjecrMarsOnboardingtask.StepDefinitions
 {
     [Binding, Scope(Feature = "Feature2_Skill")]
-    public class Feature2_SkillStepDefinitions : HookBase
+    public class Feature2_SkillStepDefinitions : CommonDriver
     {
-        private readonly LoginPage loginPageObj;
-        private readonly AddSkill addSkillObj;
-        private readonly EditSkill editSkillObj;
-        private readonly CleanSkillData cleanSkillDataObj;
-        private readonly AddSkillwithEmptyName addSkillwithEmptyNameObj;
-        private readonly AddSkillWithDuplicateEntry addSkillWithDuplicateEntryObj;
-        private readonly DeleteSkill deleteSkillObj;
-        private readonly EditSkillWithEmptyName editSkillWithEmptyNameObj;
-        private readonly EditSkillWithDuplicateEntry editSkillWithDuplicateEntryObj;
-        private readonly AddMultipleSkillRecord addMultipleSkillRecordObj;
-        public Feature2_SkillStepDefinitions() 
+        private readonly ScenarioContext _scenarioContext;
+        Skill skillObj;
+        LoginPage LoginPageObj;
+        public Feature2_SkillStepDefinitions(ScenarioContext scenarioContext)
         {
-            loginPageObj = new LoginPage();
-            addSkillObj = new AddSkill();
-            editSkillObj = new EditSkill();
-            cleanSkillDataObj = new CleanSkillData();
-            addSkillwithEmptyNameObj = new AddSkillwithEmptyName();
-            addSkillWithDuplicateEntryObj = new AddSkillWithDuplicateEntry();
-            deleteSkillObj = new DeleteSkill();
-            editSkillWithDuplicateEntryObj = new EditSkillWithDuplicateEntry();
-            editSkillWithEmptyNameObj = new EditSkillWithEmptyName();
-            addMultipleSkillRecordObj = new AddMultipleSkillRecord();
-
+            _scenarioContext = scenarioContext;
+            skillObj = new Skill();
         }
 
-        [Given(@"User Logs into Mars portal and navigates to Skill tab")]
-        public void GivenUserLogsIntoMarsPortalAndNavigatesToSkillTab()
+        [Given(@"User Logs into Mars")]
+        public void GivenUserLogsIntoMars()
         {
-            loginPageObj.login(driver);
+            LoginPageObj = new LoginPage();
+            LoginPageObj.login();
+        }
+
+
+        [Given(@"User navigate to Skill tab")]
+        public void GivenUserNavigateToSkillTab()
+        {
+            skillObj.ClickAnyTab("Skills");
+        }
+
+
+        [When(@"User add a new Skill record '([^']*)' '([^']*)'")]
+        public void WhenUserAddANewSkillRecord(string skill, string skillLevel)
+        {
+            skillObj.CreateSkill(skill, skillLevel);
+            if (_scenarioContext.ContainsKey("Skills"))
+            {
+                var Skills = _scenarioContext["Skills"] as List<string>;
+
+                if (Skills != null)
+                {
+                    Skills.Add(skill);
+                }
+                else
+                {
+                    _scenarioContext["Skills"] = new List<string> { skill };
+                }
+            }
+            else
+            {
+                _scenarioContext["Skills"] = new List<string> { skill };
+            }
+        }
+
+        [Then(@"new record should be successfully created '([^']*)'")]
+        public void ThenNewRecordShouldBeSuccessfullyCreated(string skill)
+        {
+
+            string message = skillObj.GetSuccessMessage();
+            string assertMessage = skill + " has been added to your skills";
+            Assert.That(message == assertMessage, "Actual message and Expected message do not match");
+
+            //check language and language level are created successfully
+            string addedskill = skillObj.GetSkill();
+            Assert.That(addedskill == skill, "Actual language and Expected language do not match");
+
         }
 
         [When(@"User deletes All Skills record")]
         public void WhenUserDeletesAllSkillsRecord()
         {
-            cleanSkillDataObj.Deleteskill(driver);
+            skillObj.CleanSkillData();
         }
 
         [Then(@"All Skills record should be successfully deleted")]
         public void ThenAllSkillsRecordShouldBeSuccessfullyDeleted()
         {
-            cleanSkillDataObj.AssertDeleteskill(driver);
+            var rows = driver.FindElements(By.CssSelector("div[data-tab='second'] .ui.fixed.table tbody tr"));
+            Assert.That(rows.Count == 0, "All records have been successfully deleted.");
+        }
+        [Then(@"Error message ""([^""]*)"" should be displayed")]
+        public void ThenErrorMessageShouldBeDisplayed(string errorMessage)
+        {
+            string actualErrorMessage = skillObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
+        }
+        [When(@"User tries to create a new Skill record which is already created before in record '([^']*)' '([^']*)'")]
+        public void WhenUserTriesToCreateANewSkillRecordWhichIsAlreadyCreatedBeforeInRecord(string skill, string skillLevel)
+        {
+            skillObj.CreateSkill(skill, skillLevel);
+            if (_scenarioContext.ContainsKey("Skills"))
+            {
+                var Skills = _scenarioContext["Skills"] as List<string>;
+
+                if (Skills != null)
+                {
+                    Skills.Add(skill);
+                }
+                else
+                {
+                    _scenarioContext["Skills"] = new List<string> { skill };
+                }
+            }
+            else
+            {
+                _scenarioContext["Skills"] = new List<string> { skill };
+            }
         }
 
-        [Given(@"Clean the data before test")]
-        public void GivenCleanTheDataBeforeTest()
+        [Then(@"Error message for duplicate entry ""([^""]*)"" should be displayed")]
+        public void ThenErrorMessageForDuplicateEntryShouldBeDisplayed(string errorMessage)
         {
-            cleanSkillDataObj.Deleteskill(driver);
+            string actualErrorMessage = skillObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
         }
-
-        [When(@"User creates a new Skill record '([^']*)'")]
-        public void WhenUserCreatesANewSkillRecord(string Skill)
+        [When(@"User add multiple Skills record")]
+        public void WhenUserAddMultipleSkillsRecord(Table table)
         {
-            addSkillObj.CreateSkill(driver, Skill);
-        }
+            List<string> Skills = new List<string>();
 
-        [Then(@"new Skill record should be successfully created '([^']*)'")]
-        public void ThenNewSkillRecordShouldBeSuccessfullyCreated(string Skill)
-        {
-            addSkillObj.AssertCreateSkill(driver, Skill);
-        }
-
-        [When(@"User tries to create a new Skill record with an empty name '([^']*)'")]
-        public void WhenUserTriesToCreateANewSkillRecordWithAnEmptyName(string Skill)
-        {
-            addSkillwithEmptyNameObj.CreateSkill(driver, Skill);
-        }
-
-        [Then(@"an error message ""([^""]*)"" should be displayed")]
-        public void ThenAnErrorMessageShouldBeDisplayed(string expectedMessage)
-        {
-            addSkillwithEmptyNameObj.GetErrorMessage1(driver);
-        }
-
-        [Given(@"Craete A new data '([^']*)'")]
-        public void GivenCraeteANewData(string Skill)
-        {
-            addSkillObj.CreateSkill(driver, Skill);
-        }
-
-        [When(@"User tries to create a new Skill record which is already created before in record '([^']*)'")]
-        public void WhenUserTriesToCreateANewSkillRecordWhichIsAlreadyCreatedBeforeInRecord(string Skill)
-        {
-            addSkillWithDuplicateEntryObj.CreateSkill(driver, Skill);
-        }
-
-        [Then(@"Duplicate entry error message ""([^""]*)"" should be displayed")]
-        public void ThenDuplicateEntryErrorMessageShouldBeDisplayed(string expectedMessage)
-        {
-            addSkillWithDuplicateEntryObj.GetErrorMessage2(driver);
-        }
-
-        [When(@"User creates a new Skill records")]
-        public void WhenUserCreatesANewSkillRecords(Table table)
-        {
             foreach (var row in table.Rows)
             {
-                string Skill = row["Skill"];
-                addMultipleSkillRecordObj.CreateMultipleSkill(driver, Skill);
+                string skill = row["Skill"];
+                string Skilllevel = row["Level"];
+                skillObj.CreateSkill(skill, Skilllevel);
+                Skills.Add(skill);
             }
+
+            _scenarioContext["Skills"] = Skills;
         }
 
         [Then(@"All Skill record should be successfully created")]
-        public void ThenAllSkillRecordShouldBeSuccessfullyCreated(Table table)
+        public void ThenAllSkillRecordShouldBeSuccessfullyCreated()
         {
-            var expectedSkills = table.Rows.Select(row => row["Skill"]).ToArray();
-            addMultipleSkillRecordObj.AssertCreateSkill(driver, expectedSkills);
-        }
-
-        [When(@"User edits Skill record '([^']*)'")]
-        public void WhenUserEditsSkillRecord(string Skill)
-        {
-            editSkillObj.Editskill(driver, Skill);
-        }
-
-        [Then(@"new Skill record should be successfully updated '([^']*)'")]
-        public void ThenNewSkillRecordShouldBeSuccessfullyUpdated(string Skill)
-        {
-            editSkillObj.AssertEditskill(driver, Skill);
-        }
-
-        [When(@"User tries to edit a new Skill record with an empty name '([^']*)'")]
-        public void WhenUserTriesToEditANewSkillRecordWithAnEmptyName(string Skill)
-        {
-            editSkillWithEmptyNameObj.Editskill(driver, Skill);
-        }
-
-        [Then(@"Error message ""([^""]*)"" should be displayed")]
-        public void ThenErrorMessageShouldBeDisplayed(string expectedMessage)
-        {
-            editSkillWithEmptyNameObj.GetErrorMessage1(driver);
-        }
-
-        [Given(@"Craetes a new Skill record")]
-        public void GivenCraetesANewSkillRecord(Table table)
-        {
-            foreach (var row in table.Rows)
+            if (!_scenarioContext.ContainsKey("Skills"))
             {
-                string Skill = row["Skill"];
-                addMultipleSkillRecordObj.CreateMultipleSkill(driver, Skill);
+                throw new InvalidOperationException("No skills were stored in scenario context.");
+            }
+
+            var expectedSkills = (List<string>)_scenarioContext["Skills"];
+
+            // Ensure the list is not empty
+            if (expectedSkills == null || !expectedSkills.Any())
+            {
+                throw new InvalidOperationException("Expected skills list is empty.");
+            }
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(20));
+            var actualSkills = new List<string>();
+
+            for (int i = 0; i < expectedSkills.Count; i++)
+            {
+                // Wait for each language element to be visible
+                wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath($"/html/body/div[1]/div/section[2]/div/div/div/div[3]/form/div[3]/div/div[2]/div/table/tbody[{i + 1}]/tr/td[1]")));
+
+                // Get the actual language text
+                IWebElement skillElement = driver.FindElement(By.XPath($"/html/body/div[1]/div/section[2]/div/div/div/div[3]/form/div[3]/div/div[2]/div/table/tbody[{i + 1}]/tr/td[1]"));
+                actualSkills.Add(skillElement.Text.Trim());
+            }
+
+            // Compare actual languages with expected languages
+            for (int i = 0; i < expectedSkills.Count; i++)
+            {
+                string expectedSkill = expectedSkills[i];
+                string actualSkill = actualSkills[i];
+
+                if (!string.Equals(actualSkill, expectedSkill, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new AssertionException($"Expected skill '{expectedSkill}' at row {i + 1}, but found '{actualSkill}'. Test failed!");
+                }
+            }
+
+        }
+
+        [Then(@"The following error messages should be displayed")]
+        public void ThenTheFollowingErrorMessagesShouldBeDisplayed(Table table)
+        {
+            {
+                var expectedMessages = table.Rows.Select(row => row["Expected Message"]).ToList();
+                var actualMessages = new List<string>();
+
+                foreach (var expectedMessage in expectedMessages)
+                {
+                    string actualMessage = skillObj.GetErrorMessage();
+                    actualMessages.Add(actualMessage);
+
+                    if (actualMessage != expectedMessage)
+                    {
+                        Assert.Fail($"Validation error message mismatch: Expected '{expectedMessage}' but got '{actualMessage}'");
+                    }
+                }
+
+                Assert.That(actualMessages, Is.EquivalentTo(expectedMessages), "Actual messages do not match expected messages.");
+            }
+
+        }
+        [When(@"User edits Skill record '([^']*)' '([^']*)'")]
+        public void WhenUserEditsSkillRecord(string skill, string skillLevel)
+        {
+            skillObj.UpdateSkill(skill, skillLevel);
+            if (_scenarioContext.ContainsKey("Skills"))
+            {
+                var skills = _scenarioContext["Skills"] as List<string>;
+
+                if (skills != null)
+                {
+                    skills.Add(skill);
+                }
+                else
+                {
+                    _scenarioContext["Skills"] = new List<string> { skill };
+                }
+            }
+            else
+            {
+                _scenarioContext["Skills"] = new List<string> { skill };
             }
         }
 
 
-        [When(@"User tries to edit Skill record which is already created before in record '([^']*)'")]
-        public void WhenUserTriesToEditSkillRecordWhichIsAlreadyCreatedBeforeInRecord(string Skill)
+        [Then(@"Skill record should be successfully updated '([^']*)'")]
+        public void ThenSkillRecordShouldBeSuccessfullyUpdated(string skill)
         {
-            editSkillWithDuplicateEntryObj.Editskill(driver, Skill);
+            string message = skillObj.GetSuccessMessage();
+            string assertMessage = skill + " has been updated to your skills";
+            Assert.That(message == assertMessage, "Actual message and Expected message do not match");
+            //check language and language level are created successfully
+            string updatedSkill = skillObj.GetSkill();
+            Assert.That(updatedSkill == skill, "Actual language and Expected language do not match");
         }
 
-        [Then(@"Duplicate data error message ""([^""]*)"" should be displayed")]
-        public void ThenDuplicateDataErrorMessageShouldBeDisplayed(string expectedMessage)
+
+        [Then(@"""([^""]*)"" error should be displayed and '([^']*)' Skill is not updated")]
+        public void ThenErrorShouldBeDisplayedAndSkillIsNotUpdated(string errorMessage, string skill)
         {
-            editSkillWithDuplicateEntryObj.GetErrorMessage2(driver);
+            string actualErrorMessage = skillObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
         }
 
-        [Given(@"Create a new Skill record '([^']*)'")]
-        public void GivenCreateANewSkillRecord(string Skill)
+        [Then(@"""([^""]*)"" error should be displayed")]
+        public void ThenErrorShouldBeDisplayed(string errorMessage)
         {
-            addSkillObj.CreateSkill(driver, Skill);
+            string actualErrorMessage = skillObj.GetErrorMessage();
+            string expectedErrorMessage = errorMessage;
+            Assert.That(actualErrorMessage, Is.EqualTo(expectedErrorMessage), $"Expected error message: '{expectedErrorMessage}', but got: '{actualErrorMessage}'");
+        }
+        [When(@"User delete Skill record '([^']*)'")]
+        public void WhenUserDeletesSkillRecord(string skill)
+        {
+            _scenarioContext["Skill"] = new
+            {
+                Skill = skill
+            };
+            skillObj.DeleteSkill(skill);
         }
 
-        [When(@"User deletes Skill record '([^']*)'")]
-        public void WhenUserDeletesSkillRecord(string Skill)
+        [Then(@"new Skill record should be successfully deleted")]
+        public void ThenNewSkillRecordShouldBeSuccessfullyDeleted()
         {
-            deleteSkillObj.Deleteskill(driver, Skill);
+            if (!_scenarioContext.ContainsKey("Skill"))
+            {
+                throw new InvalidOperationException("No deleted skill record was found in scenario context.");
+            }
+
+            var deletedSkill = _scenarioContext["Skill"].ToString();
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.CssSelector("div[data-tab='second'] .ui.fixed.table")));
+
+            var rows = driver.FindElements(By.CssSelector("div[data-tab='second'] .ui.fixed.table tbody tr"));
+
+            bool isSkillDeleted = true;
+
+            foreach (var row in rows)
+            {
+                var cell = row.FindElement(By.CssSelector("td:first-child"));
+                if (cell.Text.Equals(deletedSkill, StringComparison.OrdinalIgnoreCase))
+                {
+                    isSkillDeleted = false;
+                    break;
+                }
+            }
+
+            Assert.That(isSkillDeleted, $"Record '{deletedSkill}' hasn't been deleted successfully. Test Failed");
         }
 
-        [Then(@"new Skill record should be successfully deleted '([^']*)'")]
-        public void ThenNewSkillRecordShouldBeSuccessfullyDeleted(string Skill)
-        {
-            deleteSkillObj.AssertDeleteskill(driver, Skill);
-        }
 
-        [When(@"User a deletes Skill record '([^']*)'")]
-        public void WhenUserADeletesSkillRecord(string Skill)
+        [Then(@"new Skill record should not deleted")]
+        public void ThenNewSkillRecordShouldNotDeleted()
         {
-            deleteSkillObj.Deleteskill(driver, Skill);
-        }
+            if (!_scenarioContext.ContainsKey("Skill"))
+            {
+                throw new InvalidOperationException("No deleted skill record was found in scenario context.");
+            }
 
-        [Then(@"Skill record should not displyed in the list '([^']*)'")]
-        public void ThenSkillRecordShouldNotDisplyedInTheList(string Skill)
-        {
-            deleteSkillObj.AssertDeleteskill(driver, Skill);
+            var deletedSkill = _scenarioContext["Skill"].ToString();
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.CssSelector("div[data-tab='second'] .ui.fixed.table")));
+
+            var rows = driver.FindElements(By.CssSelector("div[data-tab='second'] .ui.fixed.table tbody tr"));
+
+            bool isSkillDeleted = true;
+
+            foreach (var row in rows)
+            {
+                var cell = row.FindElement(By.CssSelector("td:first-child"));
+                if (cell.Text.Equals(deletedSkill, StringComparison.OrdinalIgnoreCase))
+                {
+                    isSkillDeleted = false;
+                    break;
+                }
+            }
+
+            Assert.That(isSkillDeleted, $"Record '{deletedSkill}' hasn't been deleted successfully. Test Failed");
         }
     }
 }

@@ -5,28 +5,78 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OnboardTaskProjectMars.Utils;
+using ProjecrMarsOnboardingtask.Pages;
 
 namespace SpecFlowProject_MarsProject.Utils
 {
-    public class HookBase
+    [Binding]
+    public class Hooks1
     {
-        protected static IWebDriver driver;
-        
+        private readonly ScenarioContext _scenarioContext;
+
+        private readonly Language languageObj;
+        private readonly Skill skillObj;
+        private readonly CommonDriver CommonDriverObj;
+        private readonly IWebDriver driver;
+        public Hooks1(ScenarioContext scenarioContext)
+        {
+            _scenarioContext = scenarioContext;
+            this.driver = driver;
+            languageObj = new Language();
+            skillObj = new Skill();
+            CommonDriverObj = new CommonDriver();
+        }
+
         [BeforeScenario]
         public void BeforeScenario()
         {
-            // Initialize WebDriver (Chrome in this case)
-            driver = new ChromeDriver();
-            driver.Manage().Window.Maximize();
-            driver.Navigate().GoToUrl("http://localhost:5000/Home");
+
+            CommonDriverObj.Initialization();
+
         }
+
 
         [AfterScenario]
         public void AfterScenario()
         {
-            // Cleanup WebDriver
-            driver.Quit();
-            driver.Dispose();
+
+            try
+            {
+                // Clean up language data added during the test
+                if (_scenarioContext.ContainsKey("Languages"))
+                {
+                    List<string> Languages = _scenarioContext["Languages"] as List<string>;
+
+
+                    foreach (var language in Languages)
+                    {
+                        // Delete the language (assume DeleteLanguage is a method that deletes the language)
+                        languageObj.DeleteLanguage(language);
+
+                    }
+                }
+
+                if (_scenarioContext.ContainsKey("Skills"))
+                {
+                    List<string> skills = _scenarioContext["Skills"] as List<string>;
+
+                    foreach (var skill in skills)
+                    {
+                        // Delete the skill (assuming DeleteSkill is a method that deletes the skill)
+                        skillObj.DeleteSkill(skill);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error during AfterScenario: " + ex.Message);
+            }
+            finally
+            {
+                // Ensure WebDriver cleanup
+                CommonDriverObj.Cleanup();
+            }
         }
     }
 }

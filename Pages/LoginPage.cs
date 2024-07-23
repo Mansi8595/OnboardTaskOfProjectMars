@@ -12,9 +12,10 @@ using System.Threading.Tasks;
 
 namespace Mars_SpecFlowProject1.Pages
 {
-    public class LoginPage
+    public class LoginPage : CommonDriver
     {
-         public void login(IWebDriver driver)
+        LoginPage LoginPageObj;
+        public void login()
         {
             WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(20));
             wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.XPath("//*[@id=\"home\"]/div/div/div[1]/div/a")));

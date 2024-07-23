@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProjecrMarsOnboardingtask")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65bcbe28db25047174bdf844e79dc889edcd48a2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+93cf15e79b5e4e2d1dd48e5e6c18beb7f7a11a29")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProjecrMarsOnboardingtask")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProjecrMarsOnboardingtask")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
