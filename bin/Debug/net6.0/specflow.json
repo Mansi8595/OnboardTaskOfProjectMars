@@ -1,0 +1,16 @@
+{
+  "bindingCulture": {
+    "name": "en-US"
+  },
+  "language": {
+    "feature": "en"
+  },
+  "plugins": [
+    {
+      "name": "SpecFlow.Tools.MsBuild.Generation",
+      "parameters": {
+        "useLegacyProviders": "true"
+      }
+    }
+  ]
+}
